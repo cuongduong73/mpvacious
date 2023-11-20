@@ -170,11 +170,12 @@ this.human_readable_time = function(seconds)
         ms = math.floor((seconds * 1000) % 1000),
     }
 
-    local ret = string.format("%02dm%02ds%03dms", parts.m, parts.s, parts.ms)
+    -- local ret = string.format("%02dm%02ds%03dms", parts.m, parts.s, parts.ms)
 
-    if parts.h > 0 then
-        ret = string.format('%dh%s', parts.h, ret)
-    end
+    -- if parts.h > 0 then
+    --     ret = string.format('%dh%s', parts.h, ret)
+    -- end
+    local ret = string.format("%d.%02d.%02d.%03d", parts.h, parts.m, parts.s, parts.ms)
 
     return ret
 end
