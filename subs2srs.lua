@@ -97,6 +97,8 @@ local config = {
     disable_gui_browse = false, -- Lets you disable anki browser manipulation by mpvacious.
     ankiconnect_url = '127.0.0.1:8765',
 
+    id_field = 'ID',
+    path_field = 'Path',
     -- Note tagging
     -- The tag(s) added to new notes. Spaces separate multiple tags.
     -- Change to "" to disable tagging completely.
@@ -146,6 +148,7 @@ local platform = require('platform.init')
 local forvo = require('utils.forvo')
 local subs_observer = require('subtitles.observer')
 local menu
+local filename_factory = require('utils.filename_factory')
 
 ------------------------------------------------------------
 -- utility functions
@@ -272,12 +275,16 @@ local function prepare_for_exporting(sub_text)
     return sub_text
 end
 
-local function construct_note_fields(sub_text, secondary_text, snapshot_filename, audio_filename)
+local function construct_note_fields(sub, snapshot_filename, audio_filename)
+    local id = filename_factory.make_filename(sub['start'], sub['end'], '')
+    local path = mp.get_property('path')
     local ret = {
-        [config.sentence_field] = subs_observer.maybe_remove_all_spaces(prepare_for_exporting(sub_text)),
+        [config.id_field] = id,
+        [config.path_field] = path,
+        [config.sentence_field] = subs_observer.maybe_remove_all_spaces(prepare_for_exporting(sub['text'])),
     }
     if not h.is_empty(config.secondary_field) then
-        ret[config.secondary_field] = prepare_for_exporting(secondary_text)
+        ret[config.secondary_field] = prepare_for_exporting(sub['secondary'])
     end
     if not h.is_empty(config.image_field) and not h.is_empty(snapshot_filename) then
         ret[config.image_field] = string.format(config.image_template, snapshot_filename)
@@ -373,7 +380,7 @@ local function export_to_anki(gui)
     snapshot.run_async()
     audio.run_async()
 
-    local note_fields = construct_note_fields(sub['text'], sub['secondary'], snapshot.filename, audio.filename)
+    local note_fields = construct_note_fields(sub, snapshot.filename, audio.filename)
 
     ankiconnect.add_note(note_fields, substitute_fmt(config.note_tag), gui)
     subs_observer.clear()
@@ -410,7 +417,7 @@ local function update_last_note(overwrite)
         audio.run_async()
     end
 
-    local new_data = construct_note_fields(sub['text'], sub['secondary'], snapshot.filename, audio.filename)
+    local new_data = construct_note_fields(sub, snapshot.filename, audio.filename)
     local stored_data = ankiconnect.get_note_fields(last_note_id)
     if stored_data then
         forvo.set_output_dir(anki_media_dir)
